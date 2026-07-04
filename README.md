@@ -9,6 +9,8 @@ PowerPowder is a series of PowerShell cmdlets to connect to and query Snowflake 
 - `Connect-Snowflake` to open a connection to Snowflake using either: a credential object for user name and password; a user name, RSA key file name and a passphrase; or a user name for SSO. The account name must be provided, and standard account parameters may be provided, such as warehouse, role or database, as well as any other connection flags. We aim to return a connection object and to cache the connection object in a way that successive calls to library functions can access it without a specific handle.
 - `Invoke-SnowflakeSql` to run a query against an existing Snowflake connection and return the result in an ordinary object format just as would have been returned from a similar query through `Invoke-Sqlcmd`, including handling of multiple-query statements. Non-query statements should return with the same paradigm as one would receive from Snowsight. A connection object can be specified, or used directly from the environment if a connection has already been made. Alternately, credentials can be provided directly as parameters to the command and a connection will be transparently attempted before the query is resolved.
 
+The full package should be available to download from any ordinary source as a single module that will automatically install normally after download. Users should be able to `Install-Module` and begin working immediately. Any dependencies should be resolved automatically as part of the normal installation process.
+
 ## Why Bother?
 
 **tl;dr** if you need to run 68 SQL files in a local directory, there's no easier way to do it.
