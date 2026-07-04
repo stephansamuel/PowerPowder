@@ -15,6 +15,6 @@ PowerPowder is a series of PowerShell cmdlets to connect to and query Snowflake 
 
 Strong corporate data platforms aren't just for technology companies anymore. While many technology companies, especially less business-savvy smaller ones, use non-Windows platforms, the vast majority of larger organizations run Windows on the desktop. Python, or another platform allowing shell-based access to Snowflake, may not be available or permitted by policy, leaving no way to perform shell-based Snowflake queries.
 
-PowerShell provides a rich, first-rate platform for casual CLI-based work. It is feature-complete, offering full native access to the underlying platform as well as a mature set of support libraries that competes with or exceeds any other scripting platform. Further, PowerShell is more modern and less provincial than many competitors, _e.g.,_ `Get-Content` _vs._ `cat` or 3 lines of Python.
+PowerShell provides a rich, first-rate platform for casual CLI-based work. It is feature-complete, offering full native access to the underlying platform as well as a mature set of support libraries that competes with or exceeds any other scripting platform. Further, PowerShell is more modern and less provincial than many competitors, _e.g.,_ `Get-Content` _vs._ `cat` or 3 lines of Python. Further, PowerShell is now available on many linux distributions, making it an attractive cross-platform option for C-style shell scripting without suffering 
 
 This set of cmdlets puts the ability to run Snowflake back into the hands of Windows users.
