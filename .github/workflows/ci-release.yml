@@ -1,0 +1,108 @@
+name: CI and Release
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  ci:
+    if: github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore PowerPowder.slnx
+
+      - name: Build
+        run: dotnet build PowerPowder.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test PowerPowder.slnx -c Release --no-build
+
+      - name: Coverage
+        run: |
+          dotnet test PowerPowder.Snowflake.PowerShell.Tests/PowerPowder.Snowflake.PowerShell.Tests.csproj \
+            -c Release \
+            --no-build \
+            /p:CollectCoverage=true \
+            /p:CoverletOutputFormat=json \
+            /p:CoverletOutput=./TestResults/coverage \
+            /p:Include="[PowerPowder.Snowflake.PowerShell]*"
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-json
+          path: PowerPowder.Snowflake.PowerShell.Tests/TestResults/coverage.json
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Resolve tag version
+        id: version
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate tag version matches project
+        shell: pwsh
+        run: |
+          [xml]$project = Get-Content ./PowerPowder.Snowflake.PowerShell/PowerPowder.Snowflake.PowerShell.csproj
+          $projectVersion = $project.Project.PropertyGroup.Version | Select-Object -First 1
+          $tagVersion = "${{ steps.version.outputs.version }}"
+          if ($projectVersion -ne $tagVersion) {
+            throw "Tag version '$tagVersion' does not match project version '$projectVersion'."
+          }
+
+      - name: Run release script
+        shell: pwsh
+        run: |
+          ./build/Release.ps1 -Configuration Release
+
+      - name: Upload release zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PowerPowder.Snowflake.PowerShell-${{ steps.version.outputs.version }}
+          path: dist/PowerPowder.Snowflake.PowerShell.${{ steps.version.outputs.version }}.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/PowerPowder.Snowflake.PowerShell.${{ steps.version.outputs.version }}.zip
+          generate_release_notes: true
+
+      - name: Publish to PowerShell Gallery
+        if: ${{ secrets.PSGALLERY_API_KEY != '' }}
+        shell: pwsh
+        run: |
+          ./build/Publish-Module.ps1 -NuGetApiKey "${{ secrets.PSGALLERY_API_KEY }}" -Repository "PSGallery" -Configuration Release -SkipPackage

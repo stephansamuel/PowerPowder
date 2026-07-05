@@ -2,6 +2,8 @@
 
 > A syndicated PowerShell wrapper for Snowflake connections
 
+**NOTE:** currently, the code for this project is 100% AI-generated. It is not warranted for use until it has been thoroughly updated and tested.
+
 ## What Is It?
 
 PowerPowder is a series of PowerShell cmdlets to connect to and query Snowflake data stores. The project aims to have two working cmdlets:
@@ -10,6 +12,98 @@ PowerPowder is a series of PowerShell cmdlets to connect to and query Snowflake 
 - `Invoke-SnowflakeSql` to run a query against an existing Snowflake connection and return the result in an ordinary object format just as would have been returned from a similar query through `Invoke-Sqlcmd`, including handling of multiple-query statements. Non-query statements should return with the same paradigm as one would receive from Snowsight. A connection object can be specified, or used directly from the environment if a connection has already been made. Alternately, credentials can be provided directly as parameters to the command and a connection will be transparently attempted before the query is resolved.
 
 The full package should be available to download from any ordinary source as a single module that will automatically install normally after download. Users should be able to `Install-Module` and begin working immediately. Any dependencies should be resolved automatically as part of the normal installation process.
+
+## Implementation Details
+
+This repository now contains a C# binary PowerShell module that wraps the Snowflake .NET connector:
+
+- https://github.com/snowflakedb/snowflake-connector-net
+
+Projects:
+
+- PowerPowder.Snowflake.PowerShell/
+- PowerPowder.Snowflake.PowerShell.Tests/
+- PowerPowder.slnx
+
+Implemented behavior:
+
+- `Connect-Snowflake` supports credential auth, key pair auth, and SSO auth.
+- `Invoke-SnowflakeSql` supports cached connection use, explicit connection use, transparent inline connect, multi-statement SQL, and query/non-query outputs.
+- `Invoke-SnowflakeQuery` is preserved as an alias to `Invoke-SnowflakeSql`.
+
+Build:
+
+```bash
+dotnet build PowerPowder.slnx
+```
+
+Package (distributable module):
+
+```powershell
+pwsh -NoLogo -NoProfile -File ./build/Package-Module.ps1 -Configuration Release
+```
+
+Release script (runs restore, build, tests, coverage, package, and optional tag/publish):
+
+```powershell
+pwsh -NoLogo -NoProfile -File ./build/Release.ps1 -Configuration Release
+```
+
+Patch bump + git tag example:
+
+```powershell
+pwsh -NoLogo -NoProfile -File ./build/Release.ps1 -Bump patch -CreateGitTag
+```
+
+Publish helper:
+
+```powershell
+pwsh -NoLogo -NoProfile -File ./build/Publish-Module.ps1 -NuGetApiKey "<api-key>" -Repository "PSGallery"
+```
+
+Dry-run publish helper:
+
+```powershell
+pwsh -NoLogo -NoProfile -File ./build/Publish-Module.ps1 -NuGetApiKey "<api-key>" -Repository "PSGallery" -WhatIf
+```
+
+Output artifacts:
+
+- dist/PowerPowder.Snowflake.PowerShell/0.2.0/
+- dist/PowerPowder.Snowflake.PowerShell.0.2.0.zip
+
+Import and use:
+
+```powershell
+Import-Module ./dist/PowerPowder.Snowflake.PowerShell/0.2.0/PowerPowder.Snowflake.PowerShell.psd1
+
+$cred = Get-Credential
+Connect-Snowflake -Account "xy12345" -Credential $cred -Warehouse "COMPUTE_WH" -Database "MY_DB" -Schema "PUBLIC"
+Invoke-SnowflakeSql -Sql "select current_version() as version; select current_warehouse() as warehouse;"
+Disconnect-Snowflake
+```
+
+Run tests:
+
+```bash
+dotnet test PowerPowder.slnx
+```
+
+Run tests with coverage:
+
+```bash
+dotnet test PowerPowder.Snowflake.PowerShell.Tests/PowerPowder.Snowflake.PowerShell.Tests.csproj \
+	/p:CollectCoverage=true \
+	/p:CoverletOutputFormat=json \
+	/p:CoverletOutput=./TestResults/coverage \
+	/p:Include="[PowerPowder.Snowflake.PowerShell]*"
+```
+
+GitHub workflow:
+
+- `.github/workflows/ci-release.yml` runs free GitHub Actions CI for pull requests and main pushes.
+- The same workflow creates release artifacts on `v*` tags and publishes a GitHub release.
+- If `PSGALLERY_API_KEY` is configured as a repository secret, it also publishes to PSGallery.
 
 ## Why Bother?
 

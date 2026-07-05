@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="PowerPowder.Snowflake.PowerShell.Tests/PowerPowder.Snowflake.PowerShell.Tests.csproj" />
+  <Project Path="PowerPowder.Snowflake.PowerShell/PowerPowder.Snowflake.PowerShell.csproj" />
+</Solution>
